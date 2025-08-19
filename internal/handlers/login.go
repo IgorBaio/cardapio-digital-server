@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"catalogo-virtual-server/internal/entities"
+	"cardapio-digital-server/internal/entities"
 	"context"
 	"log"
 	"time"

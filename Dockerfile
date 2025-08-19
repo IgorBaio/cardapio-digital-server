@@ -1,26 +1,16 @@
-# Build stage
-FROM golang:1.23 as builder
+# Etapa de build
+FROM golang:1.22 AS builder
 WORKDIR /src
-
-# Download dependencies using go modules
-COPY go.mod go.sum ./
+COPY . .
 RUN go mod download
+# ⬇️ IMPORTANTE: como seu main.go está em cmd/main.go, buildamos a pasta ./cmd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/server ./cmd
 
-# Copy application source
-COPY cmd ./cmd
-COPY internal ./internal
-
-# Build the server binary
-RUN go build -o catalogo-server ./cmd
-
-# Runtime stage
-FROM debian:bookworm-slim
+# Etapa de execução (mínima e segura)
+FROM gcr.io/distroless/base-debian12
 WORKDIR /app
-COPY --from=builder /src/catalogo-server /usr/local/bin/catalogo-server
-
-# Expose default port
+COPY --from=builder /out/server /app/server
+ENV PORT=8080
 EXPOSE 8080
-
-# Start the server
-ENTRYPOINT ["/usr/local/bin/catalogo-server"]
-CMD []
+USER 65532:65532
+ENTRYPOINT ["/app/server"]

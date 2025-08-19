@@ -1,8 +1,8 @@
 package main
 
 import (
-	"catalogo-virtual-server/internal/handlers"
-	"catalogo-virtual-server/internal/utils"
+	"cardapio-digital-server/internal/handlers"
+	"cardapio-digital-server/internal/utils"
 	"context"
 	"fmt"
 	"log"
@@ -40,19 +40,19 @@ func main() {
 	fmt.Println("Tabelas disponíveis:", output.TableNames)
 
 	// Injetar o cliente no handler
-	productHandler := handlers.NewProductHandler(client, "catalog-products")
+	productHandler := handlers.NewProductHandler(client, "menu_products")
 	loginHandler := handlers.NewLoginHandler(client, "users-catalogo")
 	// auth := utils.NewAuth()
 
 	// Configurar o servidor Gin
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://igorbaio.github.io"},                   // Domínios permitidos
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Métodos permitidos
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // Headers permitidos
-		ExposeHeaders:    []string{"Content-Length", "Authorization"},         // Headers expostos
-		AllowCredentials: true,                                                // Permitir cookies
-		MaxAge:           12 * time.Hour,                                      // Cache da configuração de CORS
+		AllowOrigins:     []string{"http://localhost:5173", "https://igorbaio.github.io"}, // Domínios permitidos
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},             // Métodos permitidos
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},             // Headers permitidos
+		ExposeHeaders:    []string{"Content-Length", "Authorization"},                     // Headers expostos
+		AllowCredentials: true,                                                            // Permitir cookies
+		MaxAge:           12 * time.Hour,                                                  // Cache da configuração de CORS
 	}))
 
 	// router.POST("/login", func(c *gin.Context) {

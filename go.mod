@@ -1,4 +1,4 @@
-module catalogo-virtual-server
+module cardapio-digital-server
 
 go 1.23.3
 

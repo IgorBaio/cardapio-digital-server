@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"catalogo-virtual-server/internal/entities"
+	"cardapio-digital-server/internal/entities"
 	"context"
 	"fmt"
 	"log"
@@ -32,7 +32,7 @@ func (h *ProductHandler) GetProductsQueryData(c *gin.Context) {
 	// Realiza a Query com FilterExpression
 	result, err := h.dbClient.Scan(context.TODO(), &dynamodb.ScanInput{
 		TableName:        aws.String(h.tableName),
-		FilterExpression: aws.String("contains(OwnerId, :query)"),
+		FilterExpression: aws.String("contains(establishment_id, :query)"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":query": &types.AttributeValueMemberS{Value: query},
 		},
@@ -67,20 +67,20 @@ func (h *ProductHandler) GetProductsQueryData(c *gin.Context) {
 func mapToStructClient(item map[string]types.AttributeValue, response *entities.Product) error {
 	for key, value := range item {
 		switch key {
-		case "id":
+		case "product_id":
 			if v, ok := value.(*types.AttributeValueMemberS); ok {
 				response.ID = v.Value
 			}
 
-		case "ProductName":
+		case "name":
 			if v, ok := value.(*types.AttributeValueMemberS); ok {
 				response.Name = v.Value
 			}
-		case "Description":
+		case "description":
 			if v, ok := value.(*types.AttributeValueMemberS); ok {
 				response.Description = v.Value
 			}
-		case "Price":
+		case "price":
 			if v, ok := value.(*types.AttributeValueMemberS); ok {
 				valueFloat := v.Value
 
@@ -90,26 +90,26 @@ func mapToStructClient(item map[string]types.AttributeValue, response *entities.
 
 				response.Price = flValue // Supondo que o preço seja armazenado como string
 			}
-		case "WhatsappMessage":
+		case "establishment_id":
 			if v, ok := value.(*types.AttributeValueMemberS); ok {
-				response.WhatsappMessage = v.Value
+				response.EstablishmentID = v.Value
 			}
-		case "Image":
-			if v, ok := value.(*types.AttributeValueMemberS); ok {
-				response.Image = v.Value
-			}
-		case "Active":
-			if v, ok := value.(*types.AttributeValueMemberS); ok {
-				if v.Value == "true" {
-					response.IsActive = true
-				} else {
-					response.IsActive = false
-				}
-			}
-		case "OwnerId":
-			if v, ok := value.(*types.AttributeValueMemberS); ok {
-				response.OwnerID = v.Value
-			}
+			// case "Image":
+			// 	if v, ok := value.(*types.AttributeValueMemberS); ok {
+			// 		response.Image = v.Value
+			// 	}
+			// case "Active":
+			// 	if v, ok := value.(*types.AttributeValueMemberS); ok {
+			// 		if v.Value == "true" {
+			// 			response.IsActive = true
+			// 		} else {
+			// 			response.IsActive = false
+			// 		}
+			// 	}
+			// case "OwnerId":
+			// 	if v, ok := value.(*types.AttributeValueMemberS); ok {
+			// 		response.OwnerID = v.Value
+			// 	}
 		}
 	}
 	return nil
@@ -125,7 +125,7 @@ func (h *ProductHandler) PostProductData(c *gin.Context) {
 
 	// Lê o corpo da requisição (JSON) e vincula os dados à variável inputData
 	if err := c.ShouldBindJSON(&inputData); err != nil {
-		c.JSON(400, gin.H{"error": "Erro ao analisar dados"})
+		c.JSON(400, gin.H{"error": "Erro ao analisar dados: " + err.Error()})
 		return
 	}
 
@@ -145,7 +145,7 @@ func (h *ProductHandler) PostProductData(c *gin.Context) {
 
 func prepareItemToInput(tableName string, inputData entities.Product, isActive bool) *dynamodb.PutItemInput {
 	var id string = inputData.ID
-	if id == "" {
+	if id == "generate" {
 		id = uuid.New().String()
 	}
 	fmt.Println("id", id)
@@ -155,14 +155,14 @@ func prepareItemToInput(tableName string, inputData entities.Product, isActive b
 	return &dynamodb.PutItemInput{
 		TableName: aws.String(tableName), // Substitua pelo nome da sua tabela
 		Item: map[string]types.AttributeValue{
-			"id":              &types.AttributeValueMemberS{Value: id},
-			"ProductName":     &types.AttributeValueMemberS{Value: inputData.Name},
-			"Description":     &types.AttributeValueMemberS{Value: inputData.Description},
-			"Price":           &types.AttributeValueMemberS{Value: priceStr},
-			"WhatsappMessage": &types.AttributeValueMemberS{Value: inputData.WhatsappMessage},
-			"Image":           &types.AttributeValueMemberS{Value: inputData.Image},
-			"Active":          &types.AttributeValueMemberS{Value: fmt.Sprintf("%t", isActive)},
-			"OwnerId":         &types.AttributeValueMemberS{Value: inputData.OwnerID},
+			"product_id":       &types.AttributeValueMemberS{Value: id},
+			"name":             &types.AttributeValueMemberS{Value: inputData.Name},
+			"description":      &types.AttributeValueMemberS{Value: inputData.Description},
+			"price":            &types.AttributeValueMemberS{Value: priceStr},
+			"establishment_id": &types.AttributeValueMemberS{Value: inputData.EstablishmentID},
+			// "Image":           &types.AttributeValueMemberS{Value: inputData.Image},
+			// "Active":          &types.AttributeValueMemberS{Value: fmt.Sprintf("%t", isActive)},
+			// "OwnerId":         &types.AttributeValueMemberS{Value: inputData.OwnerID},
 		},
 	}
 }
@@ -184,7 +184,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	// Insere o item na tabela DynamoDB
-	input := prepareItemToInput(h.tableName, inputData, inputData.IsActive)
+	// input := prepareItemToInput(h.tableName, inputData, inputData.IsActive)
+	input := prepareItemToInput(h.tableName, inputData, true)
 
 	_, err := h.dbClient.PutItem(context.TODO(), input)
 	if err != nil {
